@@ -9,19 +9,55 @@ const scoreText = document.getElementById("score-text");
 const resultDescription = document.getElementById("result-description");
 const statusText = document.getElementById("status-text");
 
-const API_URL = "https://your-api-domain.com/api/check-news"; // <-- change this
+const API_URL = "https://conchoidal-fabiola-ontogenically.ngrok-free.dev/query"; // <-- change this
 
 function setStatus(msg) {
   statusText.textContent = msg || "";
 }
 
 function showResult(data) {
-  // Expecting: { truth_score: 0.82, label: "fact" | "myth", explanation: "..." }
-  const score = data.truth_score != null ? Number(data.truth_score) : null;
-  const label = (data.label || "").toLowerCase();
-  const explanation = data.explanation || "";
+  // The backend currently returns a rich object (see sample in docs), not just
+  // { truth_score, label, explanation }. We adapt that shape here and then feed
+  // the normalized values into the UI.
 
-  if (score != null) {
+  let score = null; // 0–1 or 0–100
+  let label = ""; // "fact" | "myth" | "uncertain" | custom
+  let explanation = "";
+
+  if (data && data.fact_check) {
+    const fc = data.fact_check;
+
+    // Prefer truth_likelihood (0–1); fall back to 1–10 score if needed.
+    if (fc.truth_likelihood != null) {
+      score = Number(fc.truth_likelihood);
+    } else if (fc.truth_score_1_to_10 != null) {
+      // Map 1–10 to ~10–100.
+      score = Number(fc.truth_score_1_to_10) * 10;
+    }
+
+    const verdict = (fc.verdict || "").toUpperCase();
+    if (verdict === "TRUE") {
+      label = "fact";
+    } else if (verdict === "FALSE") {
+      label = "myth";
+    } else {
+      // UNCERTAIN or anything else.
+      label = "uncertain";
+    }
+
+    explanation =
+      fc.short_answer ||
+      fc.reasoning ||
+      data.answer ||
+      "";
+  } else {
+    // Fallback to the old/simple contract if the backend ever returns it.
+    score = data && data.truth_score != null ? Number(data.truth_score) : null;
+    label = data && data.label ? String(data.label).toLowerCase() : "";
+    explanation = (data && data.explanation) || "";
+  }
+
+  if (score != null && !Number.isNaN(score)) {
     const percentage = score <= 1 ? score * 100 : score; // handle 0–1 vs 0–100
     scoreText.textContent = `${percentage.toFixed(0)}%`;
   } else {
@@ -36,8 +72,10 @@ function showResult(data) {
   } else if (label === "myth") {
     labelBadge.textContent = "MYTH";
     labelBadge.classList.add("myth");
+  } else if (label) {
+    labelBadge.textContent = label.toUpperCase();
   } else {
-    labelBadge.textContent = label || "RESULT";
+    labelBadge.textContent = "RESULT";
   }
 
   resultDescription.textContent =
@@ -69,7 +107,8 @@ function analyzeText() {
       // Add Authorization header here if needed:
       // "Authorization": "Bearer <token>"
     },
-    body: JSON.stringify({ text })
+    // The backend expects a JSON body of the form: { "query": "<content>" }
+    body: JSON.stringify({ query: text })
   })
     .then(async (res) => {
       if (!res.ok) {
