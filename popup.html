@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Agentic News Weaver</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div class="logo-circle">A</div>
+      <div>
+        <h1 class="title">Agentic News Weaver</h1>
+        <p class="subtitle">Fake news detector</p>
+      </div>
+    </header>
+
+    <section class="input-section">
+      <label for="text-input" class="label">Text to analyze</label>
+      <textarea id="text-input" rows="5" placeholder="Paste or select text on the page and click 'Use selection'..."></textarea>
+      <div class="actions">
+        <button id="use-selection-btn" class="btn ghost">Use selection</button>
+        <button id="analyze-btn" class="btn primary">Analyze</button>
+      </div>
+    </section>
+
+    <section id="result-section" class="result-section hidden">
+      <div class="result-card">
+        <div class="result-header">
+          <span id="label-badge" class="badge">RESULT</span>
+          <span id="score-text" class="score">--%</span>
+        </div>
+        <p id="result-description" class="result-description"></p>
+      </div>
+    </section>
+
+    <section id="status-section" class="status-section">
+      <p id="status-text" class="status-text"></p>
+    </section>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
